@@ -13,10 +13,8 @@ import math
 from util import reln_sexp
 
 _DC_THRESHOLD = 10.0
-#_TOUCH_THRESHOLD = 3.0   # Distance needs to be under this to possibly be touching
 _TOUCH_THRESHOLD = 1.0   # Distance needs to be under this to possibly be touching
 _COS_PARALELL_THRESH = 0.86  # cos(30) -- vectors with cosine below cannot be parallel
-#_COS_PERP_THRESH = 0.5  # cos(60) -- vectors with cosine above cannot be perpendicular
 _COS_PERP_THRESH = 0.866  # cos(30) -- vectors with cosine above cannot be perpendicular
 _PWEIGHT = 100.0
 _LWEIGHT = 10.0
@@ -155,7 +153,8 @@ def order_vertices(vertices):
     # This uses the angle-to-centroid method from the original function.
     centroid = np.mean(vertices, axis=0)
     angles_from_centroid = [math.atan2(v[1] - centroid[1], v[0] - centroid[0]) for v in vertices]
-    clockwise_vertices = [v for _, v in sorted(zip(angles_from_centroid, vertices), key=lambda p: p[0], reverse=True)]
+    #clockwise_vertices = [v for _, v in sorted(zip(angles_from_centroid, vertices), key=lambda p: p[0], reverse=True)]
+    clockwise_vertices = [v for _, v in sorted(zip(angles_from_centroid, vertices), key=lambda p: p[0], reverse=False)]
 
     num_vertices = len(clockwise_vertices)
     
@@ -199,42 +198,6 @@ def order_vertices(vertices):
 
     return final_order
 
-def order_vertices_bak(vertices):
-    """
-    Reorders a list of 2D vertices to be in clockwise order.
-
-    The function calculates the centroid of the vertices and then sorts the
-    vertices based on the angle they make with the centroid. The sorting is
-    done in descending order of the angle to achieve a clockwise arrangement.
-
-    Args:
-        vertices (List[List[float]]): A list of vertices, where each vertex 
-                                      is a list or tuple of two floats [x, y].
-
-    Returns:
-        List[List[float]]: The reordered list of vertices in clockwise order.
-    """
-    # Calculate the geometric centroid of the vertices.
-    # Using np.mean is a concise way to get the average of the x and y coordinates.
-    centroid = np.mean(vertices, axis=0)
-    cx, cy = centroid
-
-    # Calculate the angle for each vertex with respect to the centroid.
-    # math.atan2(y - cy, x - cx) gives the angle in radians between the point
-    # and the positive x-axis, relative to the centroid. This correctly handles
-    # points in all four quadrants.
-    angles = [math.atan2(v[1] - cy, v[0] - cx) for v in vertices]
-
-    # Sort the vertices based on their angles.
-    # We zip the original vertices with their calculated angles, then sort this
-    # list of pairs based on the angle. By setting reverse=True, we sort in
-    # descending order, which corresponds to a clockwise direction.
-    sorted_vertices = [vertex for _, vertex in sorted(zip(angles, vertices), key=lambda pair: pair[0], reverse=True)]
-    
-    return sorted_vertices
-
-
-
 
 
 
@@ -261,6 +224,9 @@ class Polygon():
         #return f"({self._vertex_labels[str(e[0])]}-{self._vertex_labels[str(e[1])]})"
         return f"{self._vertex_labels[str(e[0])]}{self._vertex_labels[str(e[1])]}"
 
+    def get_edge_name_pair(self, e):
+        return (f"{self._vertex_labels[str(e[0])]}", f"{self._vertex_labels[str(e[1])]}")
+    
     def get_vertex_name(self, v):
         return self._vertex_labels[str(v)]
     
@@ -282,7 +248,7 @@ def compute_relation(polygon1, polygon2):
         #print(f"Computing relation {relation} between {polygon1} and {polygon2}")
         
         score, edge_pair = compute_relation_score(polygon1, polygon2, relation)
-        scores[relation] = (score, edge_pair)  
+        scores[relation] = (score, edge_pair)
         if (score < mins) or (min_relation == Relation.VC and score == mins):
             mins = score
             min_relation = relation
@@ -383,23 +349,6 @@ def to_edge_cost(edge1, edge2):
         return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost,  f"\t\tTO edge cost: {alpha*vcost1 + beta*vcost2 + gamma*lcost} vcost1: {vcost1} vcost2: {vcost2} lcost: {lcost} ccost: {ccost}. \t\t (v1, v2):  ({v1, v2}). (u1, u2): ({u1, u2}).   max_distance: {max_distance}"
     return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost
     
-def to_edge_cost_bak(edge1, edge2):
-    #  If edge1 = [P0, P1] and edge2 = [Q0, Q1], then
-    #  being TO corresponds to all four points being collinear
-    #  and [P0, P1] and [P0, Q1] both being in the direction of (P0-->Q0) from
-    #  P  with distance greater than ||(P0-->Q0)||.
-    new_edge1 = [ edge1[0], edge2[0] ]    # [P0, Q0]
-    direction = edge2[0] - edge1[0]       # P0-->Q0
-    new_edge2 = [ edge1[0], edge2[1]]     # [P0, Q1]
-
-    l1 = longer_cost(edge1, new_edge1)
-    l2 = longer_cost(new_edge2, new_edge1)
-    pcost = parallel_cost(edge1, new_edge1) + parallel_cost(new_edge2, new_edge1)
-
-    alpha = 2.0
-    beta = 2.0
-    gamma = 1.0
-    return alpha*l1 + beta*l2 + gamma*pcost
 
 
 def tei_edge_cost(edge1, edge2):
@@ -424,19 +373,6 @@ def tei_edge_cost(edge1, edge2):
         return alpha*vcost1 + beta*vcost2 + gamma*lcost, f"\t\tTEI edge cost: {alpha*vcost1 + beta*vcost2 + gamma*lcost} vcost1: {vcost1} vcost2: {vcost2} lcost: {lcost}.   dir: {dir}    u1, u2, v1, v2:   {u1, u2, v1, v2}"
     return alpha*vcost1 + beta*vcost2 + gamma*lcost
     
-# def tei_edge_cost_bak(edge1, edge2):
-#     new_edge1 = [ edge1[0], edge2[0] ]    # [P0, Q0]
-#     direction = edge2[0] - edge1[0]       # P0-->Q0
-#     new_edge2 = [ edge1[0], edge2[1]]     # [P0, Q1]    
-
-#     l1 = longer_cost(edge1, new_edge1)
-#     l2 = longer_cost(new_edge2, edge1)
-#     pcost = parallel_cost(edge1, new_edge1) + parallel_cost(new_edge2, new_edge1)
-
-#     alpha = 1.0
-#     beta = 1.0
-#     gamma = 1.0
-#     return alpha*l1 + beta*l2 + gamma*pcost
 
 def vc_edge_cost(edge1, edge2):
     vc_cost = np.min([ np.linalg.norm(v1 -v2) for (v1,v2) in itertools.product(edge1, edge2)])
@@ -453,6 +389,10 @@ def vc_edge_cost(edge1, edge2):
     return alpha*vc_cost + beta*pcost
 
 def vec_edge_cost(edge1, edge2):
+    """
+    Cost of of thinking of a VEC relation between one vertex of an edge and the other edge.
+    For extra information, return the actual vertex and edge.
+    """
     all_vec_costs = [ (vertex_to_edge_cost(u, edge2), u, edge2, edge1) for u in edge1] + [ (vertex_to_edge_cost(v, edge1), v, edge1, edge2) for v in edge2]
     vec_cost, min_vec, min_edge, full_edge = min(all_vec_costs, key=lambda x: x[0])
     if vec_cost > _TOUCH_THRESHOLD:
@@ -496,38 +436,8 @@ def vec_edge_cost(edge1, edge2):
     if _debug:
         print(f"VEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge} \t\t end_dist: {end_dist} edge_len: {edge_len} end_cost: {end_cost}")
         return alpha*vec_cost + beta*pcost + gamma*end_cost, f"\t\tVEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge}"
-    return alpha*vec_cost + beta*pcost + gamma*end_cost
+    return (alpha*vec_cost + beta*pcost + gamma*end_cost, (min_vec, min_edge)) a
     
-
-# def tei_edge_cost_bak(edge1, edge2):
-#     # Our assumption is that edge1 is longer.  We want edge2 to have both vertices in the same direction as edge1, with the further one not reaching to length of edge1.
-#     base_point = edge1[0]
-#     e1_dir = edge1[1] - edge1[0]
-#     e1_length = norm(e1_dir)
-#     e2_distances = [norm(edge2[0] - base_point), norm(edge2[1] - base_point)]
-#     if e2_distances[0] < e2_distances[1]:
-#         closer = edge2[0]
-#         farther = edge2[1]
-#         closer_distance, farther_distance = e2_distances
-#     else:
-#         closer = edge2[0]
-#         farther = edge2[1]
-#         closer_distance, farther_distance = e2_distances[1], e2_distances[0]
-
-#     expected_closer = base_point + closer_distance*e1_dir
-#     expected_farther = base_point + farther_distance*e1_dir
-#     closer_cost = norm(closer - expected_closer)
-#     farther_cost = norm(farther - expected_farther)
-
-#     # 1 - the proportion of the edge length the distance from base to closer is
-#     inclusion_cost_closer = 1 - (norm(closer - base_basepoint) / edge1_len)
-#     inclusion_cost_farther = 1 - (norm(farther - edge1[1]) / edge1_len)
-
-#     alpha = 1.0
-#     beta = 1.0
-#     gamma = 1.0
-#     delta = 1.0
-#     return alpha*closer_cost + beta*farther_cost + gamma*inclusion_cost_closer + delta*inclusion_cost_farther
 
 def teii_edge_cost(edge1, edge2):
     return tei_edge_cost(edge2, edge2)
@@ -541,7 +451,7 @@ def compute_generic_score(polygon1, polygon2, edge_cost_function):
             if _debug:
                 cost, dbug = edge_cost_function(edge1, edge2)
             else:
-                cost = edge_cost_function(edge1, edge2) 
+                cost, extra_info = edge_cost_function(edge1, edge2) 
             if cost < min_cost:
                 min_cost = cost
                 min_edge1, min_edge2 = edge1, edge2
@@ -550,7 +460,7 @@ def compute_generic_score(polygon1, polygon2, edge_cost_function):
     if _debug:
         print(min_dbug)
 
-    return min_cost, (min_edge1, min_edge2)
+    return min_cost, (min_edge1, min_edge2, extra_info)
     
 def compute_relation_score(polygon1, polygon2, relation):
     cost_functions = {
@@ -1084,93 +994,7 @@ def save_polygon_renders_matplotlib(
             
         plt.close(fig)
 
-def save_polygon_renders_matplotlib_bak(
-    polygons_dict,
-    output_dir,
-    background_color="white",
-    save_as_svg=True,
-    svg_scale_factor=5.0, # Increase the default size of the SVG
-    png_dpi=300
-):
-    """
-    Renders polygons to either a high-resolution PNG or a scaled SVG.
 
-    Args:
-        polygons_dict (dict): The dictionary of polygons to render.
-        output_dir (str): Where to save the renders.
-        background_color (str): Canvas background color.
-        save_as_svg (bool): If True, saves as SVG. If False, saves as PNG.
-        svg_scale_factor (float): Multiplies the default SVG size for convenience.
-        png_dpi (int): The DPI to use when saving as a PNG.
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    
-    BASE_DPI = 100 
-
-    for img_name, entry in polygons_dict.items():
-        xs, ys = [], []
-        for piece in entry.get("polygons", []):
-            for x, y in piece["polygon"].vertices():
-                xs.append(x)
-                ys.append(y)
-        if not xs:
-            continue
-        canvas_w = int(max(xs) + 1)
-        canvas_h = int(max(ys) + 1)
-
-        # --- FIX: Apply scale factor for SVG sizing ---
-        scale = svg_scale_factor if save_as_svg else 1.0
-        fig_w = (canvas_w / BASE_DPI) * scale
-        fig_h = (canvas_h / BASE_DPI) * scale
-        
-        fig, ax = plt.subplots(
-            figsize=(fig_w, fig_h),
-            dpi=BASE_DPI,
-            facecolor=background_color
-        )
-        ax.set_facecolor(background_color)
-
-        # Draw polygons (same as before)
-        for piece in entry["polygons"]:
-            col_name = piece.get("color", "black")
-            alpha_val = piece.get("alpha", 0.5)
-            rgb = ImageColor.getrgb(col_name.lower())
-            rgba_facecolor = (*(c/255 for c in rgb), alpha_val)
-            verts = list(piece["polygon"].vertices())
-            patch = MplPolygon(
-                verts, closed=True, facecolor=rgba_facecolor, edgecolor="none"
-            )
-            ax.add_patch(patch)
-
-        ax.set_xlim(0, canvas_w)
-        ax.set_ylim(canvas_h, 0)
-        ax.axis("off")
-
-        # --- Final Save Logic ---
-        if save_as_svg:
-            out_name = img_name.rsplit(".", 1)[0] + ".svg"
-            out_path = os.path.join(output_dir, out_name)
-            fig.savefig(
-                out_path,
-                facecolor=fig.get_facecolor(),
-                bbox_inches="tight",
-                pad_inches=0
-            )
-            print(f"Saved vector render → {out_path}")
-        else: # Save as PNG
-            out_name = img_name.rsplit(".", 1)[0] + ".png"
-            out_path = os.path.join(output_dir, out_name)
-            fig.savefig(
-                out_path,
-                dpi=png_dpi,
-                facecolor=fig.get_facecolor(),
-                bbox_inches="tight",
-                pad_inches=0
-            )
-            print(f"Saved PNG render → {out_path}")
-            
-        plt.close(fig)
-        
 def test2(may_10=False, july_9=False, img_dbug = False):
     import os
     global _debug

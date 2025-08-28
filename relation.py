@@ -284,7 +284,7 @@ def teq_edge_cost(edge1, edge2):
         #print(f"TEQ cost is {alpha*pcost + beta*vertex_cost}         pcost: {pcost} vertex_cost: {vertex_cost}")
         
         return alpha*pcost + beta*vertex_cost, (f"\t\tTEQ edge cost: {alpha*pcost + beta*vertex_cost} pcost: {pcost} vertex_cost: {vertex_cost}")
-    return alpha*pcost + beta*vertex_cost
+    return alpha*pcost + beta*vertex_cost, {'pcost': pcost, 'vertex_cost': vertex_cost}
 
 
 
@@ -314,7 +314,7 @@ def tovi_edge_cost(edge1, edge2):
     gamma = 1.0
     if _debug:
         return alpha*cos_cost + beta*vertex_cost + gamma*lcost, f"\t\tTOVI edge cost: {alpha*cos_cost + beta*vertex_cost + gamma*lcost} vertex_cost: {vertex_cost} cos_cost: {cos_cost}  lcost: {lcost}"
-    return alpha*cos_cost + beta*vertex_cost + gamma*lcost
+    return alpha*cos_cost + beta*vertex_cost + gamma*lcost, {'cos_cost': cos_cost, 'vertex_cost': vertex_cost, 'lcost': lcost}
 
 def tovii_edge_cost(edge1, edge2):
     return tovi_edge_cost(edge2, edge1)
@@ -347,7 +347,7 @@ def to_edge_cost(edge1, edge2):
 
     if _debug:
         return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost,  f"\t\tTO edge cost: {alpha*vcost1 + beta*vcost2 + gamma*lcost} vcost1: {vcost1} vcost2: {vcost2} lcost: {lcost} ccost: {ccost}. \t\t (v1, v2):  ({v1, v2}). (u1, u2): ({u1, u2}).   max_distance: {max_distance}"
-    return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost
+    return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost, {'vcost1': vcost1, 'vcost2': vcost2, 'lcost': lcost, 'ccost': ccost}
     
 
 
@@ -371,7 +371,7 @@ def tei_edge_cost(edge1, edge2):
 
     if _debug:
         return alpha*vcost1 + beta*vcost2 + gamma*lcost, f"\t\tTEI edge cost: {alpha*vcost1 + beta*vcost2 + gamma*lcost} vcost1: {vcost1} vcost2: {vcost2} lcost: {lcost}.   dir: {dir}    u1, u2, v1, v2:   {u1, u2, v1, v2}"
-    return alpha*vcost1 + beta*vcost2 + gamma*lcost
+    return alpha*vcost1 + beta*vcost2 + gamma*lcost, {'vcost1': vcost1, 'vcost2': vcost2, 'lcost': lcost, 'v1': v1, 'v2': v2, 'u1': u1, 'u2': u2}
     
 
 def vc_edge_cost(edge1, edge2):
@@ -386,7 +386,7 @@ def vc_edge_cost(edge1, edge2):
 
     if _debug:
         return alpha*vc_cost + beta*pcost, f"\t\tVC edge cost: {alpha*vc_cost + beta*pcost} vc_cost: {vc_cost} pcost: {pcost}"
-    return alpha*vc_cost + beta*pcost
+    return alpha*vc_cost + beta*pcost, {'vc_cost': vc_cost, 'pcost': pcost}
 
 def vec_edge_cost(edge1, edge2):
     """
@@ -436,7 +436,7 @@ def vec_edge_cost(edge1, edge2):
     if _debug:
         print(f"VEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge} \t\t end_dist: {end_dist} edge_len: {edge_len} end_cost: {end_cost}")
         return alpha*vec_cost + beta*pcost + gamma*end_cost, f"\t\tVEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge}"
-    return (alpha*vec_cost + beta*pcost + gamma*end_cost, (min_vec, min_edge)) a
+    return (alpha*vec_cost + beta*pcost + gamma*end_cost, (min_vec, min_edge))
     
 
 def teii_edge_cost(edge1, edge2):
@@ -1000,8 +1000,8 @@ def test2(may_10=False, july_9=False, img_dbug = False):
     global _debug
     polygons = test_get_json_data(may_10_style=may_10,
                                   july_9_style=july_9)        
-    save_polygon_renders_matplotlib(polygons, "/tmp/rel_dbug_mpl", background_color="white",
-                                    post_render=True, pr_strings=[] )
+  #  save_polygon_renders_matplotlib(polygons, "/tmp/rel_dbug_mpl", background_color="white",
+  #                                  post_render=True, pr_strings=[] )
     # Now get the relations
     for img in polygons:
         print(f"Next image is {img}")

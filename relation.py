@@ -284,7 +284,7 @@ def teq_edge_cost(edge1, edge2):
         #print(f"TEQ cost is {alpha*pcost + beta*vertex_cost}         pcost: {pcost} vertex_cost: {vertex_cost}")
         
         return alpha*pcost + beta*vertex_cost, (f"\t\tTEQ edge cost: {alpha*pcost + beta*vertex_cost} pcost: {pcost} vertex_cost: {vertex_cost}")
-    return alpha*pcost + beta*vertex_cost, {'pcost': pcost, 'vertex_cost': vertex_cost}
+    return alpha*pcost + beta*vertex_cost, {'pcost': pcost, 'vertex_cost': vertex_cost, 'edge1': edge1, 'edge2': edge2}
 
 
 
@@ -314,7 +314,7 @@ def tovi_edge_cost(edge1, edge2):
     gamma = 1.0
     if _debug:
         return alpha*cos_cost + beta*vertex_cost + gamma*lcost, f"\t\tTOVI edge cost: {alpha*cos_cost + beta*vertex_cost + gamma*lcost} vertex_cost: {vertex_cost} cos_cost: {cos_cost}  lcost: {lcost}"
-    return alpha*cos_cost + beta*vertex_cost + gamma*lcost, {'cos_cost': cos_cost, 'vertex_cost': vertex_cost, 'lcost': lcost}
+    return alpha*cos_cost + beta*vertex_cost + gamma*lcost, {'cos_cost': cos_cost, 'vertex_cost': vertex_cost, 'lcost': lcost, 'edge1': edge1, 'edge2': edge2, 'aligned_vertices': (edge1[i], edge2[j])}
 
 def tovii_edge_cost(edge1, edge2):
     return tovi_edge_cost(edge2, edge1)
@@ -347,7 +347,7 @@ def to_edge_cost(edge1, edge2):
 
     if _debug:
         return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost,  f"\t\tTO edge cost: {alpha*vcost1 + beta*vcost2 + gamma*lcost} vcost1: {vcost1} vcost2: {vcost2} lcost: {lcost} ccost: {ccost}. \t\t (v1, v2):  ({v1, v2}). (u1, u2): ({u1, u2}).   max_distance: {max_distance}"
-    return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost, {'vcost1': vcost1, 'vcost2': vcost2, 'lcost': lcost, 'ccost': ccost}
+    return alpha*vcost1 + beta*vcost2 + gamma*lcost + delta*ccost, {'vcost1': vcost1, 'vcost2': vcost2, 'lcost': lcost, 'ccost': ccost, 'far_vertices': (edge1[i], edge2[j])}
     
 
 
@@ -375,7 +375,7 @@ def tei_edge_cost(edge1, edge2):
     
 
 def vc_edge_cost(edge1, edge2):
-    vc_cost = np.min([ np.linalg.norm(v1 -v2) for (v1,v2) in itertools.product(edge1, edge2)])
+    vc_cost, vmin1, vmin2 = min([ (np.linalg.norm(v1 -v2), v1, v2) for (v1,v2) in itertools.product(edge1, edge2)])
     # we want to make sure that the edges AREN'T parallel, otherwise
     # this could be a tangency relation
     #pcost = _PWEIGHT - parallel_cost(edge1, edge2)
@@ -386,7 +386,7 @@ def vc_edge_cost(edge1, edge2):
 
     if _debug:
         return alpha*vc_cost + beta*pcost, f"\t\tVC edge cost: {alpha*vc_cost + beta*pcost} vc_cost: {vc_cost} pcost: {pcost}"
-    return alpha*vc_cost + beta*pcost, {'vc_cost': vc_cost, 'pcost': pcost}
+    return alpha*vc_cost + beta*pcost, {'vc_cost': vc_cost, 'pcost': pcost, 'vmin1': vmin1, 'vmin2': vmin2}
 
 def vec_edge_cost(edge1, edge2):
     """
@@ -436,7 +436,7 @@ def vec_edge_cost(edge1, edge2):
     if _debug:
         print(f"VEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge} \t\t end_dist: {end_dist} edge_len: {edge_len} end_cost: {end_cost}")
         return alpha*vec_cost + beta*pcost + gamma*end_cost, f"\t\tVEC edge cost: {alpha*vec_cost + beta*pcost + gamma*end_cost} vec_cost: {vec_cost} pcost: {pcost} end_cost: {end_cost}. \t\t  min_vec, min_edge: {min_vec, min_edge}"
-    return (alpha*vec_cost + beta*pcost + gamma*end_cost, (min_vec, min_edge))
+    return (alpha*vec_cost + beta*pcost + gamma*end_cost, {'min_vec': min_vec, 'min_edge': min_edge})
     
 
 def teii_edge_cost(edge1, edge2):
@@ -457,10 +457,12 @@ def compute_generic_score(polygon1, polygon2, edge_cost_function):
                 min_edge1, min_edge2 = edge1, edge2
                 if _debug:
                     min_dbug = dbug
+                else:
+                    min_extra = extra_info
     if _debug:
         print(min_dbug)
 
-    return min_cost, (min_edge1, min_edge2, extra_info)
+    return min_cost, (min_edge1, min_edge2, min_extra)
     
 def compute_relation_score(polygon1, polygon2, relation):
     cost_functions = {

@@ -375,7 +375,8 @@ def tei_edge_cost(edge1, edge2):
     
 
 def vc_edge_cost(edge1, edge2):
-    vc_cost, vmin1, vmin2 = min([ (np.linalg.norm(v1 -v2), v1, v2) for (v1,v2) in itertools.product(edge1, edge2)])
+    vc_cost, vmin1, vmin2 = min([ (np.linalg.norm(v1 -v2), v1, v2) for (v1,v2) in itertools.product(edge1, edge2)],
+                                key= lambda x: x[0])
     # we want to make sure that the edges AREN'T parallel, otherwise
     # this could be a tangency relation
     #pcost = _PWEIGHT - parallel_cost(edge1, edge2)
@@ -446,6 +447,7 @@ def compute_generic_score(polygon1, polygon2, edge_cost_function):
     min_cost = np.inf
     min_edge1, min_edge2 = None, None
     min_dbug = None
+    min_extra = None
     for edge1 in polygon1.edges():
         for edge2 in polygon2.edges():
             if _debug:
@@ -1005,6 +1007,7 @@ def test2(may_10=False, july_9=False, img_dbug = False):
   #  save_polygon_renders_matplotlib(polygons, "/tmp/rel_dbug_mpl", background_color="white",
   #                                  post_render=True, pr_strings=[] )
     # Now get the relations
+    all_annotations = []
     for img in polygons:
         print(f"Next image is {img}")
         if False:
@@ -1019,7 +1022,7 @@ def test2(may_10=False, july_9=False, img_dbug = False):
             if _debug:
                 print(f"Comparing {polygon1['color']} and {polygon2['color']}")
             relation, cost, ep = compute_relation(p1, p2)
-            if ep is not None and len(ep) == 2:
+            if ep is not None and len(ep) == 3:
                 rs = reln_sexp(relation.name, p1, p2, polygon1['color'], polygon2['color'], ep)
                 print(f"Relation between {polygon1['color']} and {polygon2['color']} is {relation} with cost {cost} realized at {ep}, also known as {p1.get_edge_name(ep[0]), p2.get_edge_name(ep[1])}.\n Sexpr:  {rs}.")
                 annotations.append(rs)
@@ -1041,6 +1044,14 @@ def test2(may_10=False, july_9=False, img_dbug = False):
             #polygons[img]['image'].show()
             new_path = os.path.join(output_folder, img)
             polygons[img]['image'].save(new_path)
+
+        all_annotations.append(annotations)
+
+    with open("annotations.lsp", "wt") as outfile:
+        for annontations in all_annotations:
+            for line in annotations:
+                outfile.write(line + "\n")
+            outfile.write("\n"*3)
 
         
 
